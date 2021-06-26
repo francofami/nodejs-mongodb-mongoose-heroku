@@ -1,5 +1,22 @@
 const Cliente = require('../models/cliente');
 
+// Zona con mas clientes
+
+exports.zonaConMasClientes = (req, res) => {
+
+    Cliente.aggregate([
+        {$project: {"localidad.descripcion": 1}},
+        {$group: {_id: "$localidad.descripcion", total: {$sum: 1}} }]).then(data => {
+        res.send(data);
+    })
+        .catch(err => {
+            res.status(500).send({
+                message:
+                    err.message || "Some error occurred while retrieving users."
+            });
+        });
+};
+
 // ¿Quien hizo mas tickets?
 
 exports.quienHizoMasTickets = (req, res) => {

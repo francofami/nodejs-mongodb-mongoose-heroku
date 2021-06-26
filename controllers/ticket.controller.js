@@ -18,11 +18,12 @@ exports.clientesConTicketsSinResolver = (req, res) => {
         });
 };
 
-// Zona con mas clientes
+// Zona con mas desperfectos
 
-exports.zonaConMasClientes = (req, res) => {
+exports.zonaConMasDesperfectos = (req, res) => {
 
     Ticket.aggregate([
+        {$match: {tipo: "desperfecto"} },
         {$project: {"localidad.descripcion": 1}},
         {$group: {_id: "$localidad.descripcion", total: {$sum: 1}} }]).then(data => {
         res.send(data);
