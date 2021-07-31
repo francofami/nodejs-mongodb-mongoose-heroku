@@ -26,7 +26,9 @@ exports.quienHizoMasTickets = (req, res) => {
             _id: "$nombreCliente",
             total: { $sum: { $size:"$tickets" } }
         }
-   }]).then(data => {
+   },
+   { $sort : { total : -1 } },
+   { $limit: 2 }]).then(data => {
         res.send(data);
     })
         .catch(err => {
@@ -41,30 +43,44 @@ exports.quienHizoMasTickets = (req, res) => {
 
 exports.clienteEsEmpleado = (req, res) => {
 
+    Cliente.aggregate([   
+    {$group: {_id: "$dni"}},
+    {$lookup: {
+           from: "empleados",
+           localField: "_id",
+           foreignField: "dni",
+           as: "empleados"
+         }
+    },
+    {$match:{empleados:{$ne:[]}}},
+    {$project: {nombre:"$empleados.nombreEmpleado"}}
+     ]).then(data => {
+        res.send(data);
+    })
+        .catch(err => {
+            res.status(500).send({
+                message:
+                    err.message || "Some error occurred while retrieving users."
+            });
+        });
+};
+
+exports.clienteCercaDeResponsable = (req, res) => {
+
+    //Cliente.createIndex({geometry:'2dsphere'});
+
     Cliente.aggregate([
         {
-           $lookup:
-           {
-               from: "empleados",
-               let: { dni: "$dni",  nombreCliente: "$nombreCliente"},
-               pipeline: [
-                   {
-                       $match:
-                       {
-                           $expr:
-                           {
-                               $and:
-                               [
-                                   {$eq: ["$dni", "$$dni"] },
-                                   {$eq: ["$nombreEmpleado", "$$nombreCliente"]}
-                               ]
-                           }
-                       }
-                   },{$project: {dni: 0, _id: 0}}
-               ],
-               as: "data"
-           }
-        }
+          $geoNear: {
+            near: {
+                "type": "Point",
+                "coordinates": [-58.36805999279022, -34.66401990542436]
+            }, 
+            distanceField: "Distancia",
+            maxDistance: 20000000000,
+          }
+        },
+        { $project: { "Distancia": 1 } }
      ]).then(data => {
         res.send(data);
     })
